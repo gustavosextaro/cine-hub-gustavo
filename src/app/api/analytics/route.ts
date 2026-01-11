@@ -37,13 +37,16 @@ export async function POST(request: NextRequest) {
     const dailyRef = db.collection('aggregates').doc(`daily_${date}`);
 
     await db.runTransaction(async (transaction) => {
-      // Create aggregators if they don't exist
+      // ===== PHASE 1: ALL READS FIRST (Firestore requirement) =====
       const statsDoc = await transaction.get(statsRef);
+      const dailyDoc = await transaction.get(dailyRef);
+
+      // ===== PHASE 2: ALL WRITES AFTER =====
+      // Create aggregators if they don't exist
       if (!statsDoc.exists) {
         transaction.set(statsRef, { totalPageviews: 0, tiktokVisits: 0, clicks: {} });
       }
       
-      const dailyDoc = await transaction.get(dailyRef);
       if (!dailyDoc.exists) {
         transaction.set(dailyRef, { pageviews: 0 });
       }
